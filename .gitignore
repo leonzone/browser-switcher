@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+dist/
+.env*
+.DS_Store
+.idea/
+.vscode/
+.codex/
+.agents/
+node_modules/
+tmp/
