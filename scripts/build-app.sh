@@ -15,9 +15,21 @@ for SIZE in 16 32 128 256 512; do
     DOUBLE_SIZE=$((SIZE * 2))
     sips -z "$DOUBLE_SIZE" "$DOUBLE_SIZE" "$PROJECT_DIR/Assets/AppIcon-source.png" --out "$ICONSET_DIR/icon_${SIZE}x${SIZE}@2x.png" >/dev/null
 done
-iconutil -c icns "$ICONSET_DIR" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
+if command -v pngquant >/dev/null 2>&1; then
+    for PNG in "$ICONSET_DIR"/*.png; do
+        pngquant --quality=85-100 --speed 1 --force --output "$PNG" "$PNG" || true
+    done
+else
+    echo "note: pngquant not found, icons left unoptimized (brew install pngquant)"
+fi
+swift "$PROJECT_DIR/scripts/build-icns.swift" "$APP_DIR/Contents/Resources/AppIcon.icns" "$ICONSET_DIR"
 sips -z 18 18 "$PROJECT_DIR/Assets/StatusIcon-source.png" --out "$APP_DIR/Contents/Resources/StatusIconTemplate.png" >/dev/null
 sips -z 36 36 "$PROJECT_DIR/Assets/StatusIcon-source.png" --out "$APP_DIR/Contents/Resources/StatusIconTemplate@2x.png" >/dev/null
+if command -v pngquant >/dev/null 2>&1; then
+    for PNG in "$APP_DIR/Contents/Resources/StatusIconTemplate.png" "$APP_DIR/Contents/Resources/StatusIconTemplate@2x.png"; do
+        pngquant --quality=85-100 --speed 1 --force --output "$PNG" "$PNG" || true
+    done
+fi
 cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

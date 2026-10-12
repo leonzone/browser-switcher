@@ -64,7 +64,7 @@ rm -rf "$MOUNT_POINT/.fseventsd" "$MOUNT_POINT/.Trashes" 2>/dev/null || true
 hdiutil detach "$MOUNT_POINT" -quiet
 trap - EXIT
 
-hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH" >/dev/null
+hdiutil convert "$RW_DMG" -format ULMO -o "$DMG_PATH" >/dev/null
 rm -f "$RW_DMG"
 rm -rf "$STAGING_DIR"
 printf 'Built: %s\n' "$DMG_PATH"
