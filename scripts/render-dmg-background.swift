@@ -1,7 +1,7 @@
 import AppKit
 
-// Renders the DMG window background: a subtle canvas with an arrow
-// pointing from the app icon toward the Applications folder.
+// Renders the DMG window background: a subtle canvas with a playful
+// serpentine dashed arrow pointing from the app icon to Applications.
 // Usage: swift render-dmg-background.swift <output.png>
 
 guard CommandLine.arguments.count == 2 else {
@@ -9,42 +9,74 @@ guard CommandLine.arguments.count == 2 else {
     exit(2)
 }
 
-let width: CGFloat = 540
-let height: CGFloat = 360
+let width = 540
+let height = 360
 
-let image = NSImage(size: NSSize(width: width, height: height))
-image.lockFocus()
+guard let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil,
+    pixelsWide: width,
+    pixelsHigh: height,
+    bitsPerSample: 8,
+    samplesPerPixel: 4,
+    hasAlpha: true,
+    isPlanar: false,
+    colorSpaceName: .deviceRGB,
+    bytesPerRow: 0,
+    bitsPerPixel: 0
+) else {
+    FileHandle.standardError.write("failed to create bitmap\n".data(using: .utf8)!)
+    exit(1)
+}
+
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
 NSColor(calibratedRed: 0.976, green: 0.976, blue: 0.984, alpha: 1).setFill()
 NSRect(x: 0, y: 0, width: width, height: height).fill()
 
 // Icons sit at Finder positions {140, 185} and {400, 185} in a 540x360 window.
-// Finder y is measured from the top; NSImage y is measured from the bottom.
-let arrowY = height - 185
-let arrowColor = NSColor(calibratedWhite: 0.72, alpha: 1)
+// Finder y is measured from the top; bitmap y is measured from the bottom.
+let arrowY = CGFloat(height) - 185
+let startX: CGFloat = 216
+let endX: CGFloat = 310
+let amplitude: CGFloat = 12
+let periods: CGFloat = 1.5
+let arrowColor = NSColor(calibratedRed: 0.42, green: 0.52, blue: 0.74, alpha: 1)
 
-let shaft = NSBezierPath()
-shaft.move(to: NSPoint(x: 222, y: arrowY))
-shaft.line(to: NSPoint(x: 306, y: arrowY))
-shaft.lineWidth = 6
-shaft.lineCapStyle = .round
+// Serpentine path: sine wave sampled densely, stroked with a dash pattern.
+let wave = NSBezierPath()
+let steps = 120
+for i in 0...steps {
+    let t = CGFloat(i) / CGFloat(steps)
+    let x = startX + t * (endX - startX)
+    let y = arrowY + amplitude * sin(t * periods * 2 * .pi)
+    if i == 0 {
+        wave.move(to: NSPoint(x: x, y: y))
+    } else {
+        wave.line(to: NSPoint(x: x, y: y))
+    }
+}
+wave.lineWidth = 6
+wave.lineCapStyle = .round
+wave.lineJoinStyle = .round
+wave.setLineDash([12, 8], count: 2, phase: 0)
 arrowColor.setStroke()
-shaft.stroke()
+wave.stroke()
 
+// Solid arrowhead pointing right at the end of the wave.
+let tipY = arrowY + amplitude * sin(periods * 2 * .pi)
 let head = NSBezierPath()
-head.move(to: NSPoint(x: 292, y: arrowY + 15))
-head.line(to: NSPoint(x: 312, y: arrowY))
-head.line(to: NSPoint(x: 292, y: arrowY - 15))
+head.move(to: NSPoint(x: endX - 15, y: tipY + 14))
+head.line(to: NSPoint(x: endX + 5, y: tipY))
+head.line(to: NSPoint(x: endX - 15, y: tipY - 14))
 head.lineWidth = 6
 head.lineCapStyle = .round
 head.lineJoinStyle = .round
 head.stroke()
 
-image.unlockFocus()
+NSGraphicsContext.restoreGraphicsState()
 
-guard let tiff = image.tiffRepresentation,
-      let rep = NSBitmapImageRep(data: tiff),
-      let png = rep.representation(using: .png, properties: [:]) else {
+guard let png = rep.representation(using: .png, properties: [:]) else {
     FileHandle.standardError.write("failed to render background\n".data(using: .utf8)!)
     exit(1)
 }

@@ -58,6 +58,9 @@ on run argv
 end run
 APPLESCRIPT
 
+# Keep system-created mount artifacts out of the final image.
+rm -rf "$MOUNT_POINT/.fseventsd" "$MOUNT_POINT/.Trashes" 2>/dev/null || true
+
 hdiutil detach "$MOUNT_POINT" -quiet
 trap - EXIT
 
