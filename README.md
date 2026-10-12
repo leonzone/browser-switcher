@@ -29,10 +29,10 @@ DogSwitch 是一个原生 macOS 菜单栏应用。点击菜单栏上的柯基图
 
 ## 📥 下载安装
 
-从 [Releases](https://github.com/leonzone/browser-switcher/releases/latest) 下载最新的 `DogSwitch-vX.Y.Z.zip`：
+从 [Releases](https://github.com/leonzone/browser-switcher/releases/latest) 下载最新的 `DogSwitch-X.Y.Z.dmg`：
 
-1. 解压 zip，将 `DogSwitch.app` 拖入「应用程序」
-2. 首次打开如提示"无法验证开发者"，前往 **系统设置 → 隐私与安全性**，点击"仍要打开"
+1. 双击打开 dmg，将 `DogSwitch.app` 拖进 `Applications` 文件夹
+2. 首次打开如提示"无法验证开发者"：右键点击 App 选择「打开」，或前往 **系统设置 → 隐私与安全性** 点击"仍要打开"
    （当前版本为 ad-hoc 签名，未做 Developer ID 公证）
 3. 点击菜单栏上的柯基图标开始使用
 
@@ -72,6 +72,12 @@ open dist/DogSwitch.app
 
 构建脚本会编译 release 版本、生成图标资源、组装 `dist/DogSwitch.app` 并进行 ad-hoc 签名。
 
+打包 DMG 安装包（自动读取 App 内版本号）：
+
+```sh
+bash scripts/build-dmg.sh   # 产出 dist/DogSwitch-X.Y.Z.dmg
+```
+
 ## ✅ 测试
 
 ```sh
@@ -86,7 +92,8 @@ swift run BrowserSwitcherCoreTests
 Sources/BrowserSwitcherCore/   浏览器模型与切换协调（纯逻辑，可测试）
 Sources/BrowserSwitcher/       AppKit 菜单栏应用与 macOS 系统适配
 Tests/BrowserSwitcherCoreTests/ 使用 fake 系统访问的确定性测试
-scripts/build-app.sh           本地构建打包脚本
+scripts/build-app.sh           本地构建 App 脚本
+scripts/build-dmg.sh           DMG 安装包打包脚本
 Assets/                        图标原图与生成记录
 ```
 
