@@ -25,6 +25,7 @@ final class RulesWindowController: NSObject, NSWindowDelegate, NSTableViewDataSo
                           backing: .buffered, defer: false)
         window.title = "路由规则"
         window.minSize = NSSize(width: 420, height: 220)
+        window.isReleasedWhenClosed = false
         window.center()
 
         super.init()
