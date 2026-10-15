@@ -177,11 +177,96 @@ final class BrowserServiceTests {
     }
 }
 
+final class RouterTests {
+    private let chrome = "com.google.Chrome"
+    private let safari = "com.apple.Safari"
+
+    private func rule(_ pattern: String, _ bundleID: String, enabled: Bool = true) -> RoutingRule {
+        RoutingRule(pattern: pattern, browserBundleID: bundleID, isEnabled: enabled)
+    }
+
+    @MainActor
+    func testExactAndSubdomainMatch() {
+        let router = Router(rules: [rule("github.com", chrome)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://github.com/a/b")!), chrome)
+        expectEqual(router.resolve(URL(string: "https://www.github.com")!), chrome)
+        expectEqual(router.resolve(URL(string: "https://deep.sub.github.com/page?q=1")!), chrome)
+    }
+
+    @MainActor
+    func testSimilarDomainDoesNotMatch() {
+        let router = Router(rules: [rule("github.com", chrome)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://notgithub.com")!), safari)
+        expectEqual(router.resolve(URL(string: "https://github.com.evil.cn")!), safari)
+    }
+
+    @MainActor
+    func testFirstEnabledRuleWins() {
+        let router = Router(rules: [rule("github.com", chrome), rule("github.com", safari)],
+                            fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://github.com")!), chrome)
+    }
+
+    @MainActor
+    func testDisabledRuleSkipped() {
+        let router = Router(rules: [rule("github.com", chrome, enabled: false)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://github.com")!), safari)
+    }
+
+    @MainActor
+    func testNoMatchFallsBack() {
+        let router = Router(rules: [rule("github.com", chrome)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://apple.com")!), safari)
+    }
+
+    @MainActor
+    func testSelfTargetingRuleFallsBack() {
+        let router = Router(rules: [rule("github.com", Router.selfBundleID)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://github.com")!), safari)
+    }
+
+    @MainActor
+    func testURLWithoutHostFallsBack() {
+        let router = Router(rules: [rule("github.com", chrome)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(fileURLWithPath: "/tmp")), safari)
+        expectEqual(router.resolve(URL(string: "mailto:a@b.com")!), safari)
+    }
+
+    @MainActor
+    func testBlankPatternIsIgnored() {
+        let router = Router(rules: [rule("  ", chrome)], fallbackBundleID: safari)
+        expectEqual(router.resolve(URL(string: "https://github.com")!), safari)
+    }
+
+    @MainActor
+    func testRuleStoreRoundTrip() {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString).appendingPathComponent("rules.json")
+        let store = RuleStore(fileURL: url)
+        let config = RoutingConfig(rules: [rule("github.com", chrome)], fallbackBundleID: chrome)
+        store.save(config)
+        expectEqual(store.load(), config)
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
+    @MainActor
+    func testRuleStoreMissingOrCorruptReturnsDefaults() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let missing = RuleStore(fileURL: dir.appendingPathComponent("rules.json"))
+        expectEqual(missing.load(), RoutingConfig())
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? Data("not json".utf8).write(to: dir.appendingPathComponent("rules.json"))
+        expectEqual(missing.load(), RoutingConfig())
+        try? FileManager.default.removeItem(at: dir)
+    }
+}
+
 @main
 struct TestRunner {
     @MainActor
     static func main() async {
         let suite = BrowserServiceTests()
+        let router = RouterTests()
         let tests: [(String, () async -> Void)] = [
             ("candidate filtering", suite.testDiscoveryExcludesUnlistedApplicationsAndMissingBrowsers),
             ("distinct Tabbit identities", suite.testBothTabbitApplicationsHaveDistinctIdentity),
@@ -193,7 +278,17 @@ struct TestRunner {
             ("partial failure", suite.testPartialFailurePreservesActualStateWithoutRollback),
             ("removed or moved browser", suite.testRemovedOrMovedBrowserDoesNotWrite),
             ("duplicate submission", suite.testRepeatedSelectionIsRejectedWhileWaitingForSystem),
-            ("unknown defaults", suite.testUnknownDefaultsAreNotReportedAsMatching)
+            ("unknown defaults", suite.testUnknownDefaultsAreNotReportedAsMatching),
+            ("exact and subdomain match", router.testExactAndSubdomainMatch),
+            ("similar domain no match", router.testSimilarDomainDoesNotMatch),
+            ("first enabled rule wins", router.testFirstEnabledRuleWins),
+            ("disabled rule skipped", router.testDisabledRuleSkipped),
+            ("no match falls back", router.testNoMatchFallsBack),
+            ("self targeting falls back", router.testSelfTargetingRuleFallsBack),
+            ("hostless URL falls back", router.testURLWithoutHostFallsBack),
+            ("blank pattern ignored", router.testBlankPatternIsIgnored),
+            ("rule store round trip", router.testRuleStoreRoundTrip),
+            ("rule store defaults", router.testRuleStoreMissingOrCorruptReturnsDefaults)
         ]
         var passed = 0
         for (name, test) in tests {

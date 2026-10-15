@@ -5,7 +5,7 @@
 <h1 align="center">DogSwitch</h1>
 
 <p align="center">
-  住在 macOS 菜单栏里的默认浏览器切换器 🐶
+  住在 macOS 菜单栏里的默认浏览器切换器 + URL 路由器 🐶
 </p>
 
 <p align="center">
@@ -17,15 +17,20 @@
 
 ---
 
-DogSwitch 是一个原生 macOS 菜单栏应用。点击菜单栏上的柯基图标，从列表中选择浏览器，即可一键切换系统的 HTTP / HTTPS 默认浏览器——不用再翻系统设置。
+DogSwitch 是一个原生 macOS 菜单栏应用，身兼两职：
+
+- **URL 路由器**：把 DogSwitch 设为默认浏览器后，所有应用里点击的 http/https 链接都会先经过它，按你配置的域名规则自动跳转到指定浏览器（类似 Velja / Choosy）
+- **默认浏览器切换器**：点击菜单栏上的柯基图标，从列表中选择浏览器，即可一键切换系统的 HTTP / HTTPS 默认浏览器
 
 ## ✨ 特性
 
+- 🔀 **URL 路由**：按域名规则（含子域名）把链接转发给指定浏览器，不匹配时打开回落浏览器
+- ⚙️ **规则窗口**：菜单栏里直接增删规则、勾选启用、选择目标浏览器，编辑即保存
 - 🖱 **一键切换**：菜单栏点两下，同时切换 HTTP 和 HTTPS 默认浏览器
 - 🔄 **状态实时刷新**：每次打开菜单都会重新读取系统实际默认设置，勾选状态永远真实
 - 🧩 **双协议独立处理**：HTTP 与 HTTPS 指向不同浏览器时分别显示、分别补齐
 - 🛡 **失败不隐瞒**：取消系统确认或部分失败时如实提示当前状态，可再次选择完成剩余切换
-- 🪶 **纯菜单栏应用**：无主窗口、无 Dock 图标，零第三方依赖
+- 🪶 **纯菜单栏应用**：无主窗口、无 Dock 图标（规则窗口打开时临时出现在 Dock），零第三方依赖
 
 ## 📥 下载安装
 
@@ -40,12 +45,23 @@ DogSwitch 是一个原生 macOS 菜单栏应用。点击菜单栏上的柯基图
 
 ## 🚀 使用
 
+### URL 路由（按域名自动跳转浏览器）
+
+1. 点击菜单栏柯基图标，选择「将 DogSwitch 设为默认浏览器」，在系统弹窗中确认
+2. 选择「回落浏览器」，指定不匹配任何规则时用哪个浏览器打开
+3. 选择「路由规则…」，在窗口中添加规则：域名（如 `github.com`，自动包含子域名）→ 目标浏览器
+4. 之后在微信、邮件、终端等任意 App 里点击链接，就会按规则自动打开对应浏览器
+
+> 规则按顺序匹配第一条启用的规则。浏览器**内部**点击的链接不经过系统，无法路由（这是 macOS 的机制限制，Velja 等工具也一样）。
+
+### 切换系统默认浏览器
+
 1. 点击菜单栏柯基图标
 2. 菜单顶部显示当前默认浏览器（勾选项）；HTTP 与 HTTPS 不一致时会分行显示
 3. 选择目标浏览器，在系统弹窗中完成确认
 4. 再次打开菜单即可看到切换结果
 
-> 切换的是系统默认浏览器，只影响遵循系统设置的链接。应用内置浏览器或指定浏览器的操作不受影响。
+> 切换的是系统默认浏览器，只影响遵循系统设置的链接。应用内置浏览器或指定浏览器的操作不受影响。注意：把默认浏览器切走后，URL 路由功能即停用（链接不再经过 DogSwitch）。
 
 ### 支持的浏览器
 
@@ -89,11 +105,13 @@ swift run BrowserSwitcherCoreTests
 ## 📁 项目结构
 
 ```
-Sources/BrowserSwitcherCore/   浏览器模型与切换协调（纯逻辑，可测试）
-Sources/BrowserSwitcher/       AppKit 菜单栏应用与 macOS 系统适配
+Sources/BrowserSwitcherCore/   浏览器模型、切换协调与路由匹配引擎（纯逻辑，可测试）
+Sources/BrowserSwitcher/       AppKit 菜单栏应用、规则窗口与 macOS 系统适配
 Tests/BrowserSwitcherCoreTests/ 使用 fake 系统访问的确定性测试
 scripts/build-app.sh           本地构建 App 脚本
-scripts/build-dmg.sh           DMG 安装包打包脚本
+scripts/build-dmg.sh           DMG 安装包打包脚本（含窗口布局）
+scripts/build-icns.swift       手工组装 icns（保留 pngquant 优化）
+scripts/render-dmg-background.swift  DMG 背景图生成
 Assets/                        图标原图与生成记录
 ```
 

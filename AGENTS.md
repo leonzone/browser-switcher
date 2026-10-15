@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Structure
-- `Sources/BrowserSwitcherCore/`: browser models and switch coordination.
-- `Sources/BrowserSwitcher/`: AppKit menu bar app and macOS adapter.
+- `Sources/BrowserSwitcherCore/`: browser models, switch coordination, and URL routing rules engine.
+- `Sources/BrowserSwitcher/`: AppKit menu bar app, rules window, and macOS adapter.
 - `Tests/BrowserSwitcherCoreTests/`: deterministic tests with fake system access.
 - `scripts/`: local build and packaging scripts.
 - `Assets/`: original generated icon artwork and its generation prompts; build scripts produce platform sizes without changing the source images.
@@ -10,7 +10,7 @@
 
 ## Rules
 - Use Swift and AppKit without third-party dependencies. Support macOS 12 and later.
-- Limit changes to the approved menu bar browser switcher scope.
+- Limit changes to the approved menu bar browser switcher and URL router scope.
 - Never change real default browser settings during automated tests.
 - Ask the user before real system configuration changes, deletion, global installs, or publishing.
 - Run `swift run BrowserSwitcherCoreTests` and `bash scripts/build-app.sh` after implementation changes.
