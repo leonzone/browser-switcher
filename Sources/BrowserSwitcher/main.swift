@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import BrowserSwitcherCore
 
 @MainActor
@@ -131,6 +132,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(makeDefault)
         menu.addItem(.separator())
 
+        addLabel("默认跳转浏览器")
+        for (index, browser) in browsers.enumerated() {
+            let item = NSMenuItem(title: browser.name, action: #selector(selectFallback(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = index
+            item.state = config.fallbackBundleID == browser.bundleID ? .on : .off
+            item.image = browserIcon(browser)
+            menu.addItem(item)
+        }
+        if browsers.isEmpty { addLabel("未发现支持的浏览器") }
+        menu.addItem(.separator())
+
+        let switchItem = NSMenuItem(title: "切换系统默认浏览器", action: nil, keyEquivalent: "")
+        let switchMenu = NSMenu()
         for (index, browser) in browsers.enumerated() {
             var title = browser.name
             if !state.matches(browser.bundleID) {
@@ -145,32 +160,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = state.matches(browser.bundleID) ? .on : .off
             item.isEnabled = !service.isSwitching && !state.matches(browser.bundleID)
             item.image = browserIcon(browser)
-            menu.addItem(item)
-        }
-        if browsers.isEmpty { addLabel("未发现支持的浏览器") }
-        menu.addItem(.separator())
-
-        let fallbackItem = NSMenuItem(title: "未匹配链接的浏览器", action: nil, keyEquivalent: "")
-        let fallbackMenu = NSMenu()
-        for (index, browser) in browsers.enumerated() {
-            let item = NSMenuItem(title: browser.name, action: #selector(selectFallback(_:)), keyEquivalent: "")
-            item.target = self
-            item.tag = index
-            item.state = config.fallbackBundleID == browser.bundleID ? .on : .off
-            item.image = browserIcon(browser)
-            fallbackMenu.addItem(item)
+            switchMenu.addItem(item)
         }
         if browsers.isEmpty {
             let empty = NSMenuItem(title: "未发现支持的浏览器", action: nil, keyEquivalent: "")
             empty.isEnabled = false
-            fallbackMenu.addItem(empty)
+            switchMenu.addItem(empty)
         }
-        fallbackItem.submenu = fallbackMenu
-        menu.addItem(fallbackItem)
+        switchItem.submenu = switchMenu
+        menu.addItem(switchItem)
+        menu.addItem(.separator())
 
         let rulesItem = NSMenuItem(title: "路由规则…", action: #selector(openRules), keyEquivalent: "")
         rulesItem.target = self
         menu.addItem(rulesItem)
+        menu.addItem(.separator())
+
+        let loginItem = NSMenuItem(title: "开机启动", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        loginItem.target = self
+        if #available(macOS 13.0, *) {
+            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        } else {
+            loginItem.title = "开机启动（需要 macOS 13）"
+            loginItem.isEnabled = false
+        }
+        menu.addItem(loginItem)
+
+        let updateItem = NSMenuItem(title: "检测更新…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        menu.addItem(updateItem)
 
         if let resultMessage {
             menu.addItem(.separator())
@@ -198,6 +216,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func selectBrowser(_ sender: NSMenuItem) {
         guard browsers.indices.contains(sender.tag), !service.isSwitching else { return }
         performSwitch(to: browsers[sender.tag])
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        guard #available(macOS 13.0, *) else { return }
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            resultMessage = "开机启动设置失败"
+        }
+        rebuildMenu()
+    }
+
+    @objc private func checkForUpdates() {
+        NSWorkspace.shared.open(URL(string: "https://github.com/leonzone/browser-switcher/releases/latest")!)
     }
 
     private func performSwitch(to browser: Browser) {

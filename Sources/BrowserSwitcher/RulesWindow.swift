@@ -94,21 +94,24 @@ final class RulesWindowController: NSObject, NSWindowDelegate, NSTableViewDataSo
         tableView.headerView = NSTableHeaderView()
         tableView.dataSource = self
         tableView.delegate = self
+        tableView.rowHeight = 28
         tableView.usesAlternatingRowBackgroundColors = true
         scrollView.documentView = tableView
         content.addSubview(scrollView)
 
-        let addButton = NSButton(frame: NSRect(x: 12, y: 12, width: 28, height: 24))
-        addButton.bezelStyle = .smallSquare
-        addButton.title = "+"
+        let addButton = NSButton(frame: NSRect(x: 12, y: 12, width: 26, height: 23))
+        addButton.bezelStyle = .rounded
+        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "添加规则")
+        addButton.title = ""
         addButton.target = self
         addButton.action = #selector(addRule)
         addButton.autoresizingMask = [.maxXMargin, .maxYMargin]
         content.addSubview(addButton)
 
-        let removeButton = NSButton(frame: NSRect(x: 44, y: 12, width: 28, height: 24))
-        removeButton.bezelStyle = .smallSquare
-        removeButton.title = "−"
+        let removeButton = NSButton(frame: NSRect(x: 42, y: 12, width: 26, height: 23))
+        removeButton.bezelStyle = .rounded
+        removeButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: "删除规则")
+        removeButton.title = ""
         removeButton.target = self
         removeButton.action = #selector(removeRule)
         removeButton.autoresizingMask = [.maxXMargin, .maxYMargin]
