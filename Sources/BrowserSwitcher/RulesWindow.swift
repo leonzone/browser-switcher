@@ -114,7 +114,7 @@ final class RulesWindowController: NSObject, NSWindowDelegate, NSTableViewDataSo
         removeButton.autoresizingMask = [.maxXMargin, .maxYMargin]
         content.addSubview(removeButton)
 
-        let hint = NSTextField(labelWithString: "按顺序匹配第一条启用的规则；不匹配时打开回落浏览器")
+        let hint = NSTextField(labelWithString: "按顺序匹配第一条启用的规则；都不匹配的链接用菜单里选的浏览器打开")
         hint.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: .small))
         hint.textColor = .secondaryLabelColor
         hint.frame = NSRect(x: 84, y: 14, width: content.bounds.width - 96, height: 20)

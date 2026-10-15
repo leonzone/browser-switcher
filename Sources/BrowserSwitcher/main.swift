@@ -150,7 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if browsers.isEmpty { addLabel("未发现支持的浏览器") }
         menu.addItem(.separator())
 
-        let fallbackItem = NSMenuItem(title: "回落浏览器", action: nil, keyEquivalent: "")
+        let fallbackItem = NSMenuItem(title: "未匹配链接的浏览器", action: nil, keyEquivalent: "")
         let fallbackMenu = NSMenu()
         for (index, browser) in browsers.enumerated() {
             let item = NSMenuItem(title: browser.name, action: #selector(selectFallback(_:)), keyEquivalent: "")
